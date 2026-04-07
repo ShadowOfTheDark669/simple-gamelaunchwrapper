@@ -4,17 +4,19 @@
 #include <stdio.h>
 #include <ctype.h>
 
-int rangestrcpy (char *r, int x, int y, char *d){                            //// COPY n-th ELEMENT FROM A STRING TO ANOTHER, NOT MEMORY SAFE
+int rangestrcpy (char *r, int x, int y, char **d){                           //// COPY n-th ELEMENT FROM A STRING TO ANOTHER, MEMORY SAFE
 
  int accel  = 0;
+ int dlen = ( (y-x) + 2);                                                    //// +1 FOR FIRST CHAR, +1 FOR '\0'
+ *d = calloc(dlen, sizeof(char));
+ 
  while (x <= y ){
-  d[accel] = *(r + x);
-
-  accel++;
-  x++;	
+ *(*d+accel) = *(r + x);
+ accel++;
+ x++;	
  }
 
- d[accel] = '\0';
+ *(*d+accel) = '\0';
  return 0;
 	
 }
@@ -224,9 +226,8 @@ int main () {
 
   }
 
-  int namelen = ( (name_last_charpos - name_first_charpos) + 2);                 //// +1 FOR NULL TERMINATOR AND +1 FOR FIRST CHARACTER
-  char *gamename = calloc(namelen, sizeof(char) );
-  rangestrcpy(gamelist[net_elementno_gamelist], name_first_charpos, name_last_charpos, gamename);
+  char *gamename;
+  rangestrcpy(gamelist[net_elementno_gamelist], name_first_charpos, name_last_charpos, &gamename);
 
   printf("-*%d. %s\n", net_elementno_gamelist, gamename);  
   net_elementno_gamelist++;
@@ -250,14 +251,12 @@ int main () {
  
  int  exec_first_charpos = (last_slashpos[game_input] + 1);
  int *exec_last_charpos  = &last_charpos[game_input];
- int  execlen = ( (*exec_last_charpos - exec_first_charpos) + 2);              //// +1 FOR NULL TERMINATOR AND +1 FOR FIRST CHARACTER
- char *exec = calloc(execlen, sizeof(char) );
- rangestrcpy(gamelist[game_input], exec_first_charpos, *exec_last_charpos, exec);
+ char *exec;
+ rangestrcpy(gamelist[game_input], exec_first_charpos, *exec_last_charpos, &exec);
 
  int  path_last_charpos = (last_slashpos[game_input] - 1);
- int  pathlen = (last_slashpos[game_input] + 1); 
- char *path = calloc(pathlen, sizeof(char) );
- rangestrcpy(gamelist[game_input], 0, path_last_charpos, path);
+ char *path;
+ rangestrcpy(gamelist[game_input], 0, path_last_charpos, &path);
 
 
 //////////////////// GET PREFIX //////////////////////////////
@@ -296,7 +295,7 @@ int main () {
  int net_elementno_conf = (elementno_conf - 1);
 
  while (accel <= net_elementno_conf ){                                           //// CHECK FOR THE PRESENCE OF CUSTOM CONFIGURATION OPTIONS
- char indexcheck_str[5];
+ char *indexcheck_str;
  int posoffset = 15;                                                             //// OFFSET FOR THE DETECTION OF INDEX NUMBER IN A CUSTOM CONFIGURATION DEFINITION
 
   while ( *(configarray[accel] + posoffset ) != '_' ){
@@ -309,7 +308,7 @@ int main () {
   posoffset++;
 
   }
-  rangestrcpy(configarray[accel], posoffset_prev, (posoffset-1), indexcheck_str);//// COPY INDEX NUMBER INTO indexcheck_str
+  rangestrcpy(configarray[accel], posoffset_prev, (posoffset-1), &indexcheck_str);//// COPY INDEX NUMBER INTO indexcheck_str
   int indexcheck = atoi(indexcheck_str);                                         
 
   if (indexcheck == game_input){                                                 //// CHECK IF CUSTOM CONFIGURATION INDEX NO IS APPLICABLE TO SELECTED GAME
@@ -321,15 +320,12 @@ int main () {
    }
   posoffset--;                                                                   //// posoffset NOW EQUALS LAST CHAR BEFORE '\0'
  
-  int len = ( (posoffset - posoffset_prev) + 2 );
 
     if ( *(configarray[accel] + 7) == 'S'){                                      //// CHECK IF CUSTOM CONFIGURATION IS FOR STARTEXEC
-    custom_startexec = calloc(len, sizeof(char));
-    rangestrcpy(configarray[accel], posoffset_prev, posoffset, custom_startexec);
+    rangestrcpy(configarray[accel], posoffset_prev, posoffset, &custom_startexec);
 
    }else if ( *(configarray[accel] + 7) == 'E'){                                 //// CHECK IF CUSTOM CONFIGURATION IS FOR ENDEXEC
-    custom_endexec = calloc(len, sizeof(char));
-    rangestrcpy(configarray[accel], posoffset_prev, posoffset, custom_endexec);
+    rangestrcpy(configarray[accel], posoffset_prev, posoffset, &custom_endexec);
    
     }
   }
@@ -337,10 +333,10 @@ int main () {
 	
  }
  
- size_t cmd_vk_dll_len = ( strlen(winevkprefix) + strlen(winepath) + strlen(winedll) + execlen + 3 + 11 + 17);     //// +3 FOR SPACE +1 FOR NULL TERMINATOR from execlen +17 FOR "WINEDLLOVERRIDES=" +11 FOR "WINEPREFIX="
- size_t cmd_vk_len = ( strlen(winevkprefix) + strlen(winepath) + execlen + 2 + 11);                                //// +2 FOR SPACE +1 FOR NULL TERMINATOR from execlen +11 FOR "WINEPREFIX="
- size_t cmd_van_dll_len = ( strlen(winevanprefix) + strlen(winepath) + strlen(winedll) + execlen + 3 + 11 + 17);   //// +3 FOR SPACE +1 FOR NULL TERMINATOR from execlen +17 FOR "WINEDLLOVERRIDES=" +11 FOR "WINEPREFIX="
- size_t cmd_van_len = ( strlen(winevanprefix) + strlen(winepath) + execlen + 2 + 11);                              //// +2 FOR SPACE +1 FOR NULL TERMINATOR from execlen +11 FOR "WINEPREFIX="
+ size_t cmd_vk_dll_len = ( strlen(winevkprefix) + strlen(winepath) + strlen(winedll) + strlen(exec) + 3 + 1 + 11 + 17);     //// +3 FOR SPACE +1 FOR NULL TERMINATOR +17 FOR "WINEDLLOVERRIDES=" +11 FOR "WINEPREFIX="
+ size_t cmd_vk_len = ( strlen(winevkprefix) + strlen(winepath) + strlen(exec) + 2 + 1 + 11);                                //// +2 FOR SPACE +1 FOR NULL TERMINATOR +11 FOR "WINEPREFIX="
+ size_t cmd_van_dll_len = ( strlen(winevanprefix) + strlen(winepath) + strlen(winedll) + strlen(exec) + 3 + 1 + 11 + 17);   //// +3 FOR SPACE +1 FOR NULL TERMINATOR +17 FOR "WINEDLLOVERRIDES=" +11 FOR "WINEPREFIX="
+ size_t cmd_van_len = ( strlen(winevanprefix) + strlen(winepath) + strlen(exec) + 2 + 1 + 11);                              //// +2 FOR SPACE +1 FOR NULL TERMINATOR +11 FOR "WINEPREFIX="
 
  size_t startexeclen = strlen(startexec);
  size_t endexeclen = strlen(endexec);
