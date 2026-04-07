@@ -61,7 +61,7 @@ int main () {
   }else if (c == '#'){                                                       //// SKIP COMMENTS
    readtonewline(&c, config);
    	
-  }else if (c == '\n' || ' '){                                               //// SKIP SPACES AND EMPTY LINES
+  }else if (c == '\n' || c == ' '){                                          //// SKIP SPACES AND EMPTY LINES
    readcharnext(&c, config);
     	
   }
