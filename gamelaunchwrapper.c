@@ -166,7 +166,7 @@ int main () {
     elementlen++;
     c = fgetc(txt);	
 
-    }
+    }   
    elementlen++;            
    gamelist[accel] = calloc(elementlen, sizeof(char) );
    int posoffset = (0 - elementlen);
@@ -175,7 +175,7 @@ int main () {
 
    accel++;
    readtonewline(&c, txt);
-   
+
   }else if (c == '#'){
    readtonewline(&c, txt);
   	
@@ -201,36 +201,44 @@ int main () {
 ////////////////// PRINT GAMENAME ////////////////////////////  
 
 
-  while (net_elementno_gamelist < elementno_gamelist){
-   int slashno = 0;
-   accel = 0;
-   int name_first_charpos;
-   int name_last_charpos;
+ while (net_elementno_gamelist < elementno_gamelist){
+ int slashno = 0;
+ accel = 0;
+ int name_first_charpos;
+ int name_last_charpos;
       
-   while ( *(gamelist[net_elementno_gamelist] + accel) != '\0'){
-     if ( *(gamelist[net_elementno_gamelist] + accel) == '/'){
-     slashno++;
-     last_slashpos[net_elementno_gamelist] = accel;
-      if (slashno == FIRST_SLASHCHECK_GAMENAME){
-      name_first_charpos = (accel + 1);   
+  while ( *(gamelist[net_elementno_gamelist] + accel) != '\0'){
+   if ( *(gamelist[net_elementno_gamelist] + accel) == '/'){
+   slashno++;
+   last_slashpos[net_elementno_gamelist] = accel;
+    if (slashno == FIRST_SLASHCHECK_GAMENAME){
+    name_first_charpos = (accel + 1);   
  
-     }else if (slashno == LAST_SLASHCHECK_GAMENAME){
-      name_last_charpos = (accel - 1);
+    }else if (slashno == LAST_SLASHCHECK_GAMENAME){
+    name_last_charpos = (accel - 1);
                	
-      }           	
-    }else{
-     last_charpos[net_elementno_gamelist] = accel;
-  
-    }
-    accel++;
+    }           	
+   }
+  last_charpos[net_elementno_gamelist] = accel;
+  accel++;
 
   }
+  if (slashno < FIRST_SLASHCHECK_GAMENAME || slashno < LAST_SLASHCHECK_GAMENAME){
+  printf("\nTypo in config! SLASHCHECK options set incorrectly for path:\n%s\nExiting!\n", gamelist[net_elementno_gamelist]);
+  return 1;
+  	
+  }
+  if (last_slashpos[net_elementno_gamelist] == last_charpos[net_elementno_gamelist]){
+  printf("\nLast character in a path cannot be a slash:\n%s\nExiting!\n", gamelist[net_elementno_gamelist]);
+  return 1;
+  	
+  }
+  
+ char *gamename;
+ rangestrcpy(gamelist[net_elementno_gamelist], name_first_charpos, name_last_charpos, &gamename);
 
-  char *gamename;
-  rangestrcpy(gamelist[net_elementno_gamelist], name_first_charpos, name_last_charpos, &gamename);
-
-  printf("-*%d. %s\n", net_elementno_gamelist, gamename);  
-  net_elementno_gamelist++;
+ printf("-*%d. %s\n", net_elementno_gamelist, gamename);  
+ net_elementno_gamelist++;
  }                                                                              //// net_elementno NOW EQUALS elementno_gamelist after end of LOOP
 
  net_elementno_gamelist--;                                                      //// net_elementno NOW EQUALS elementno_gamelist - 1
@@ -343,10 +351,10 @@ int main () {
  size_t custom_startexeclen = strlen(custom_startexec);
  size_t custom_endexeclen = strlen(custom_endexec);
 
- size_t cmd_vk_dll_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_vk_dll_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen + 1);   //// +1 FOR ';' AND +1 FOR SPACE
- size_t cmd_vk_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_vk_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen + 1);           //// +1 FOR ';' AND +1 FOR SPACE
- size_t cmd_van_dll_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_van_dll_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen + 1); //// +1 FOR ';' AND +1 FOR SPACE
- size_t cmd_van_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_van_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen + 1);         //// +1 FOR ';' AND +1 FOR SPACE
+ size_t cmd_vk_dll_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_vk_dll_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen);   //// +1 FOR ';' AND +1 FOR SPACE
+ size_t cmd_vk_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_vk_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen);           //// +1 FOR ';' AND +1 FOR SPACE
+ size_t cmd_van_dll_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_van_dll_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen); //// +1 FOR ';' AND +1 FOR SPACE
+ size_t cmd_van_len_full = (startexeclen + 1 + 1 + custom_startexeclen + 1 + 1 + cmd_van_len + 1 + 1 + custom_endexeclen + 1 + 1 + endexeclen);         //// +1 FOR ';' AND +1 FOR SPACE
 
  char **finalcmd = calloc(4, sizeof(char*) );
  finalcmd[0] = calloc(cmd_vk_dll_len_full, sizeof(char) );
@@ -354,13 +362,18 @@ int main () {
  finalcmd[2] = calloc(cmd_van_dll_len_full, sizeof(char));
  finalcmd[3] = calloc(cmd_van_len_full, sizeof(char) );
              
- snprintf(finalcmd[0], cmd_vk_dll_len_full, "%s; %s; WINEDLLOVERRIDES=%s WINEPREFIX=%s %s %s; %s; %s&", startexec, custom_startexec, winedll, winevkprefix, winepath, exec, custom_endexec, endexec);  	
- snprintf(finalcmd[1], cmd_vk_len_full, "%s; %s; WINEPREFIX=%s %s %s; %s; %s&", startexec, custom_startexec, winevkprefix, winepath, exec, custom_endexec, endexec);
+ snprintf(finalcmd[0], cmd_vk_dll_len_full, "%s; %s; WINEDLLOVERRIDES=%s WINEPREFIX=%s %s %s; %s; %s", startexec, custom_startexec, winedll, winevkprefix, winepath, exec, custom_endexec, endexec);  	
+ snprintf(finalcmd[1], cmd_vk_len_full, "%s; %s; WINEPREFIX=%s %s %s; %s; %s", startexec, custom_startexec, winevkprefix, winepath, exec, custom_endexec, endexec);
 
- snprintf(finalcmd[2], cmd_van_dll_len_full, "%s; %s; WINEDLLOVERRIDES=%s WINEPREFIX=%s %s %s; %s; %s&", startexec, custom_startexec, winedll, winevanprefix, winepath, exec, custom_endexec, endexec);
- snprintf(finalcmd[3], cmd_van_len_full, "%s; %s; WINEPREFIX=%s %s %s; %s; %s&", startexec, custom_startexec, winevanprefix, winepath, exec, custom_endexec, endexec);
+ snprintf(finalcmd[2], cmd_van_dll_len_full, "%s; %s; WINEDLLOVERRIDES=%s WINEPREFIX=%s %s %s; %s; %s", startexec, custom_startexec, winedll, winevanprefix, winepath, exec, custom_endexec, endexec);
+ snprintf(finalcmd[3], cmd_van_len_full, "%s; %s; WINEPREFIX=%s %s %s; %s; %s", startexec, custom_startexec, winevanprefix, winepath, exec, custom_endexec, endexec);
 
- chdir(path);
+ if (chdir(path) != 0){
+ printf("\nFailed to change directory to: %s\nCheck configuration for typos! Exiting!\n", path);
+ return 1;
+ 	
+ }
+ 
  system(finalcmd[prefix_input]);
 
 // printf("%s\n", winevkprefix); 
