@@ -36,6 +36,20 @@ int readcharnext (char *c, FILE *t){                                         ///
  return 0;	
 }
 
+int isstrdigit (char *i){                                                    //// CHECK WHETHER THE SUPPLIED STRING IS A DIGIT AS A WHOLE
+
+ int accel = 0;
+ while ( *(i+accel) != '\0'){
+  int tempcheck = *(i+accel);
+  if (isdigit(tempcheck) == 0){
+  return 0;	                                                                 //// RETURN SAME CODE AS isdigit() IF A NON DIGIT IS ENCOUNTERED
+  }
+  accel++;
+ 	
+ }
+ return 1;                                                                  //// RETURN SAME CODE AS isdigit() IF THE ENTIRE STRING IS OF DIGITS
+	
+}
 
 ///////////////////////////////////////////////////////////////
 
@@ -124,8 +138,14 @@ int main () {
 
 
  fclose(config);
-
+ 
 ///////////////////////////////////////////////////////////////
+
+ if (isstrdigit(configarray[4]) == 0 || isstrdigit(configarray[5]) == 0){ //// CHECK IF THE CONFIGARRAY INDEX CORRESPONDING TO SLASHCHECK OPTION(S) IS OF DIGITS
+ printf("SLASHCHECK options cannot have not positive integer values in config! Re-check order of options and their values!\nExiting!\n");
+ return 1;
+ 	
+ }
 
 /////////////// GAMELIST.TXT /////////////////////////////////
  FILE *txt = fopen("gamelist.txt" , "r");
@@ -154,13 +174,19 @@ int main () {
  }     
 
  char **gamelist = calloc(elementno_gamelist, sizeof(char*) );
+ int *last_slashpos = calloc(elementno_gamelist, sizeof(int) );
+ int *last_charpos = calloc(elementno_gamelist, sizeof(int) );
+ int *name_first_charpos = calloc(elementno_gamelist, sizeof(int) );;
+ int *name_last_charpos = calloc(elementno_gamelist, sizeof(int) );
+ int FIRST_SLASHCHECK_GAMENAME = atoi(configarray[4]);
+ int LAST_SLASHCHECK_GAMENAME = atoi(configarray[5]); 
+
  rewind(txt);
  c = fgetc(txt);
  accel = 0;
 
  while (c != EOF){
  int elementlen = 0;
-
    if (c == '/'){
     while (c != '%'){
     elementlen++;
@@ -173,18 +199,46 @@ int main () {
    fseek(txt, posoffset, SEEK_CUR);                                             
    fgets( gamelist[accel], elementlen, txt);
 
-   accel++;
-   readtonewline(&c, txt);
+   int accel2 =0;
+   int slashno = 0;
+   while ( *(gamelist[accel] + accel2) != '\0'){
+    if ( *(gamelist[accel] + accel2) == '/'){
+    slashno++;
+    last_slashpos[accel] = accel2;
+     if (slashno == FIRST_SLASHCHECK_GAMENAME){
+     name_first_charpos[accel] = (accel2 + 1);   
+ 
+     }else if (slashno == LAST_SLASHCHECK_GAMENAME){
+     name_last_charpos[accel] = (accel2 - 1);
+               	
+     }           	
+    }
+   last_charpos[accel] = accel2;
+   accel2++;
+
+   }
+   if (last_slashpos[accel] == last_charpos[accel]){
+   printf("\nLast character in a path cannot be a slash:\n%s\nExiting!\n", gamelist[accel]);
+   return 1;                                                                     //// CHECK IF THE LAST CHARACTER IN AN ENTRY IS A SLASH
+  	
+   }
+   if (slashno < LAST_SLASHCHECK_GAMENAME){                                       
+   printf("\nTypo in config! SLASHCHECK options set incorrectly for path:\n%s\nExiting!\n", gamelist[accel]); 
+   return 1;                                                                     //// VALIDATE TOTAL NUMBER OF SLASHES IN CURRENT ENTRY AGAINST SLASHCHECK OPTION
+  	
+   }
+  accel++;
+  readtonewline(&c, txt);
 
   }else if (c == '#'){
-   readtonewline(&c, txt);
+  readtonewline(&c, txt);
   	
   }else if (c == '\n' || c == ' '){
-   readcharnext(&c, txt);
+  readcharnext(&c, txt);
   	
   }else{
-   printf("Invalid gamelist! Typo! Exiting!\n");
-   return 1;
+  printf("Invalid gamelist! Typo! Exiting!\n");
+  return 1;
         	
   }  
  }
@@ -192,51 +246,12 @@ int main () {
  fclose(txt);
 //////////////////////////////////////////////////////////////  
 
- int *last_slashpos = calloc(elementno_gamelist, sizeof(int) );
- int *last_charpos = calloc(elementno_gamelist, sizeof(int) );
- int net_elementno_gamelist = 0;
- int FIRST_SLASHCHECK_GAMENAME = atoi(configarray[4]);
- int LAST_SLASHCHECK_GAMENAME = atoi(configarray[5]); 
-
 ////////////////// PRINT GAMENAME ////////////////////////////  
 
-
- while (net_elementno_gamelist < elementno_gamelist){
- int slashno = 0;
- accel = 0;
- int name_first_charpos;
- int name_last_charpos;
-      
-  while ( *(gamelist[net_elementno_gamelist] + accel) != '\0'){
-   if ( *(gamelist[net_elementno_gamelist] + accel) == '/'){
-   slashno++;
-   last_slashpos[net_elementno_gamelist] = accel;
-    if (slashno == FIRST_SLASHCHECK_GAMENAME){
-    name_first_charpos = (accel + 1);   
- 
-    }else if (slashno == LAST_SLASHCHECK_GAMENAME){
-    name_last_charpos = (accel - 1);
-               	
-    }           	
-   }
-  last_charpos[net_elementno_gamelist] = accel;
-  accel++;
-
-  }
-  if (slashno < FIRST_SLASHCHECK_GAMENAME || slashno < LAST_SLASHCHECK_GAMENAME){
-  printf("\nTypo in config! SLASHCHECK options set incorrectly for path:\n%s\nExiting!\n", gamelist[net_elementno_gamelist]);
-  return 1;
-  	
-  }
-  if (last_slashpos[net_elementno_gamelist] == last_charpos[net_elementno_gamelist]){
-  printf("\nLast character in a path cannot be a slash:\n%s\nExiting!\n", gamelist[net_elementno_gamelist]);
-  return 1;
-  	
-  }
-  
+ int net_elementno_gamelist = 0;
+ while (net_elementno_gamelist < elementno_gamelist){        
  char *gamename;
- rangestrcpy(gamelist[net_elementno_gamelist], name_first_charpos, name_last_charpos, &gamename);
-
+ rangestrcpy(gamelist[net_elementno_gamelist], name_first_charpos[net_elementno_gamelist], name_last_charpos[net_elementno_gamelist], &gamename);
  printf("-*%d. %s\n", net_elementno_gamelist, gamename);  
  net_elementno_gamelist++;
  }                                                                              //// net_elementno NOW EQUALS elementno_gamelist after end of LOOP
@@ -327,8 +342,6 @@ int main () {
 
    }
   posoffset--;                                                                   //// posoffset NOW EQUALS LAST CHAR BEFORE '\0'
- 
-
     if ( *(configarray[accel] + 7) == 'S'){                                      //// CHECK IF CUSTOM CONFIGURATION IS FOR STARTEXEC
     rangestrcpy(configarray[accel], posoffset_prev, posoffset, &custom_startexec);
 
