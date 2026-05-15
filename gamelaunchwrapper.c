@@ -17,44 +17,28 @@ int rangestrcpy (char *r, int x, int y, char **d){                           ///
  }
 
  *(*d+accel) = '\0';
- return 0;
+ return 1;
 	
 }
 
-int readtonewline (char *c, FILE *t){                                        //// READ TO END OF LINE IN A FILE STREAM
+int readtonewline (int *c, FILE *t){                                        //// READ TO END OF LINE IN A FILE STREAM
 
  while (*c != '\n'){
  *c = fgetc(t);	
  }
  *c = fgetc(t);
- return 0;
+ return 1;
 	
 }
 
-int readcharnext (char *c, FILE *t){                                         //// READ TO NEXT CHARACTER IN A FILE STREAM
+int readcharnext (int *c, FILE *t){                                         //// READ TO NEXT CHARACTER IN A FILE STREAM
  *c = fgetc(t);
- return 0;	
-}
-
-int isstrdigit (char *i){                                                    //// CHECK WHETHER THE SUPPLIED STRING IS A DIGIT AS A WHOLE
-
- int accel = 0;
- while ( *(i+accel) != '\0'){
-  int tempcheck = *(i+accel);
-  if (isdigit(tempcheck) == 0){
-  return 0;	                                                                 //// RETURN SAME CODE AS isdigit() IF A NON DIGIT IS ENCOUNTERED
-  }
-  accel++;
- 	
- }
- return 1;                                                                  //// RETURN SAME CODE AS isdigit() IF THE ENTIRE STRING IS OF DIGITS
-	
+ return 1;	
 }
 
 ///////////////////////////////////////////////////////////////
 
 int main () {
-  
 /////////////// FILE PARSING /////////////////////////////////
 
 /////////////// CONFIG.TXT ///////////////////////////////////
@@ -62,10 +46,10 @@ int main () {
 
  if (config == NULL){
   printf("Failed to open config.txt! Exiting\n");
-  return 1;	
+  return 0;	
  }
  
- char c = fgetc(config);
+ int c = fgetc(config);
  int elementno_conf = 0;
  
  while (c != EOF){
@@ -130,7 +114,7 @@ int main () {
 
   }else{
    printf("Typo detected in config! Exiting\n");
-   return 1;
+   return 0;
  	
   }
 
@@ -141,17 +125,18 @@ int main () {
  
 ///////////////////////////////////////////////////////////////
 
- if (isstrdigit(configarray[4]) == 0 || isstrdigit(configarray[5]) == 0){ //// CHECK IF THE CONFIGARRAY INDEX CORRESPONDING TO SLASHCHECK OPTION(S) IS OF DIGITS
- printf("SLASHCHECK options cannot have not positive integer values in config! Re-check order of options and their values!\nExiting!\n");
- return 1;
+ int first_slashcheck_gamename = atoi(configarray[4]);
+ int last_slashcheck_gamename = atoi(configarray[5]); 
+ if (first_slashcheck_gamename == 0 || last_slashcheck_gamename == 0 || last_slashcheck_gamename == first_slashcheck_gamename){ 
+ printf("SLASHCHECK options cannot have non-positive integer values in config! Re-check order of options and their values!\nExiting!\n");
+ return 0;                                                                //// CHECK IF THE CONFIGARRAY INDEX CORRESPONDING TO SLASHCHECK OPTION(S) IS OF DIGITS
  	
  }
-
 /////////////// GAMELIST.TXT /////////////////////////////////
  FILE *txt = fopen("gamelist.txt" , "r");
  if (txt == NULL){
   printf("failed to open gamelist.txt!\n");
-  return 1;
+  return 0;
  	
  }
  
@@ -178,8 +163,6 @@ int main () {
  int *last_charpos = calloc(elementno_gamelist, sizeof(int) );
  int *name_first_charpos = calloc(elementno_gamelist, sizeof(int) );;
  int *name_last_charpos = calloc(elementno_gamelist, sizeof(int) );
- int FIRST_SLASHCHECK_GAMENAME = atoi(configarray[4]);
- int LAST_SLASHCHECK_GAMENAME = atoi(configarray[5]); 
 
  rewind(txt);
  c = fgetc(txt);
@@ -205,10 +188,10 @@ int main () {
     if ( *(gamelist[accel] + accel2) == '/'){
     slashno++;
     last_slashpos[accel] = accel2;
-     if (slashno == FIRST_SLASHCHECK_GAMENAME){
+     if (slashno == first_slashcheck_gamename){
      name_first_charpos[accel] = (accel2 + 1);   
  
-     }else if (slashno == LAST_SLASHCHECK_GAMENAME){
+     }else if (slashno == last_slashcheck_gamename){
      name_last_charpos[accel] = (accel2 - 1);
                	
      }           	
@@ -219,12 +202,12 @@ int main () {
    }
    if (last_slashpos[accel] == last_charpos[accel]){
    printf("\nLast character in a path cannot be a slash:\n%s\nExiting!\n", gamelist[accel]);
-   return 1;                                                                     //// CHECK IF THE LAST CHARACTER IN AN ENTRY IS A SLASH
+   return 0;                                                                     //// CHECK IF THE LAST CHARACTER IN AN ENTRY IS A SLASH
   	
    }
-   if (slashno < LAST_SLASHCHECK_GAMENAME){                                       
+   if (slashno < last_slashcheck_gamename){                                       
    printf("\nTypo in config! SLASHCHECK options set incorrectly for path:\n%s\nExiting!\n", gamelist[accel]); 
-   return 1;                                                                     //// VALIDATE TOTAL NUMBER OF SLASHES IN CURRENT ENTRY AGAINST SLASHCHECK OPTION
+   return 0;                                                                     //// VALIDATE TOTAL NUMBER OF SLASHES IN CURRENT ENTRY AGAINST SLASHCHECK OPTION
   	
    }
   accel++;
@@ -238,7 +221,7 @@ int main () {
   	
   }else{
   printf("Invalid gamelist! Typo! Exiting!\n");
-  return 1;
+  return 0;
         	
   }  
  }
@@ -266,22 +249,11 @@ int main () {
  printf("Enter game index no (0 to %d): ", net_elementno_gamelist );
  fgets(game_inputstr, 5, stdin); 
  int game_input = atoi(game_inputstr);
- 
- if (game_input < 0 || game_input > net_elementno_gamelist ){
- 	printf("invalid value!\n");
-    return 1;
+ if (game_input < 0 || game_input > net_elementno_gamelist){
+ printf("invalid value!\n");
+ return 0;
  }
  
- int  exec_first_charpos = (last_slashpos[game_input] + 1);
- int *exec_last_charpos  = &last_charpos[game_input];
- char *exec;
- rangestrcpy(gamelist[game_input], exec_first_charpos, *exec_last_charpos, &exec);
-
- int  path_last_charpos = (last_slashpos[game_input] - 1);
- char *path;
- rangestrcpy(gamelist[game_input], 0, path_last_charpos, &path);
-
-
 //////////////////// GET PREFIX //////////////////////////////
 
  printf("Choose WINEPREFIX flavor:\n");
@@ -294,14 +266,24 @@ int main () {
  char *prefix_inputstr = game_inputstr;
  fgets(prefix_inputstr, 5, stdin);
  int prefix_input = atoi(prefix_inputstr);
-
  if (prefix_input < 0 || prefix_input > 3){
- 	 printf("invalid value!\n");
- 	 return 1;
- }
+ printf("invalid value!\n");
+ return 0;
+ } 
 
 //////////////////////////////////////////////////////////////  
 ////////// COMMAND ASSEMBLY AND EXECUTION ////////////////////  
+
+ int  exec_first_charpos = (last_slashpos[game_input] + 1);
+ int *exec_last_charpos  = &last_charpos[game_input];
+ char *exec;
+ rangestrcpy(gamelist[game_input], exec_first_charpos, *exec_last_charpos, &exec);
+
+ int  path_last_charpos = (last_slashpos[game_input] - 1);
+ char *path;
+ rangestrcpy(gamelist[game_input], 0, path_last_charpos, &path);
+
+
 
  char *winevkprefix = configarray[0];                                            //// MAP ARRAY ELEMENTS TO CERTAIN POINTER VARIABLES(IMPROVES READIBILITY) 
  char *winevanprefix = configarray[1];
@@ -310,14 +292,14 @@ int main () {
  char *startexec = configarray[6];
  char *endexec = configarray[7];
 
-
+/// CHECK FOR THE PRESENCE OF CUSTOM CONFIGURATION OPTIONS ///
  accel = 8; 
  char placeholder[] = "echo";                                                    //// PLACEHOLDER VALUE IF NO CUSTOM CONFIGURATION IS FOUND
  char *custom_startexec = placeholder;
  char *custom_endexec = placeholder;
  int net_elementno_conf = (elementno_conf - 1);
 
- while (accel <= net_elementno_conf ){                                           //// CHECK FOR THE PRESENCE OF CUSTOM CONFIGURATION OPTIONS
+ while (net_elementno_conf >= accel ){                                           
  char *indexcheck_str;
  int posoffset = 15;                                                             //// OFFSET FOR THE DETECTION OF INDEX NUMBER IN A CUSTOM CONFIGURATION DEFINITION
 
@@ -383,7 +365,7 @@ int main () {
 
  if (chdir(path) != 0){
  printf("\nFailed to change directory to: %s\nCheck configuration for typos! Exiting!\n", path);
- return 1;
+ return 0;
  	
  }
  
@@ -401,6 +383,6 @@ int main () {
 
 // printf("%s\n", finalcmd[prefix_input]);
 
- return 0;
+ return 1;
  
 }
